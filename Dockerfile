@@ -18,7 +18,7 @@ COPY src/main.js /home/main.js
 COPY node_modules /home/node_modules
 
 # adding supervisor configuration
-COPY supervisor.conf /etc/supervisor/conf.d/supervisor.conf
+COPY supervisord.conf /etc/supervisor/conf.d/supervisord.conf
 
 # starting services
-ENTRYPOINT ["supervisord", "-c", "/etc/supervisor/conf.d/supervisor.conf"]
+ENTRYPOINT ["supervisord", "-c", "/etc/supervisor/conf.d/supervisord.conf"]
