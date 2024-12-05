@@ -106,7 +106,7 @@ body {
     margin-right: 0;
 }
 
-.planet-resident-none, .gif-error {
+.planet-resident-error, .gif-error {
     font-weight: 800;
     color: #af2335;
     text-align: right;

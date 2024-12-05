@@ -31,14 +31,7 @@ async function fetchPlanets() {
 
         const data = await response.json();
 
-        if (data.next) {
-            loadButton.onclick = () => fetchPlanets(data.next);
-        } else {
-            const endMessage = document.createElement("p");
-            endMessage.classList.add("end-message");
-            endMessage.innerText = "No more planets to load.";
-            parent.appendChild(endMessage);
-
+        if (!data.next) {
             loadButton.disabled = true;
             loadButton.textContent = "No More Planets";
         }
@@ -75,7 +68,7 @@ async function fetchResidentName(url) {
         return data.name;
     } catch (error) {
         console.error(`Error fetching resident: ${error.message}`);
-        return null;
+        return "error";
     }
 }
 
@@ -83,7 +76,7 @@ async function fetchResidentName(url) {
 async function fetchGIF(title) {
     const query = encodeURIComponent(title.replace(/\s+/g, '-'));
     try {
-        const response = await fetch(`/${IMAGE_BASE_URL}/${query}`);
+        const response = await fetch(`${IMAGE_BASE_URL}/${query}`);
         if (!response.ok) {
             throw new Error(`Error fetching GIF: ${response.statusText}`);
         }
@@ -91,7 +84,7 @@ async function fetchGIF(title) {
         return data.animated_image || null;
     } catch (error) {
         console.error(`Error fetching GIF for ${title}: ${error.message}`)
-        return null;
+        return "error";
     }
 }
 
@@ -134,7 +127,6 @@ async function createItem(name, diameter, climate, orbital_period, population, r
                 li.innerText = residentName;
                 ul.appendChild(li);
             }
-
             li.appendChild(ul);
         } else {
             const p = document.createElement("p");
@@ -146,7 +138,7 @@ async function createItem(name, diameter, climate, orbital_period, population, r
     } else {
         const p = document.createElement("p");
         p.classList.add("planet-resident-error");
-        p.innerText = "No known residents";
+        p.innerText = "Error while fetching residents";
         li.appendChild(p);
     }
 
