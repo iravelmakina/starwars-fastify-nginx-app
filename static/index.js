@@ -101,6 +101,7 @@ async function processPlanets(planets, parent) {
             parent.appendChild(li);
         } catch (error) {
             console.error(`Error processing planet "${planet.name}": ${error.message}`);
+            throw error;
         }
     }
 }
