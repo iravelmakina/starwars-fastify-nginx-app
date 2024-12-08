@@ -207,9 +207,8 @@ async function generateResidentsList(residents) {
 
 
 async function createGifElement(title) {
-    const gifUrl = await fetchGIF(title);
-
-    if (gifUrl) {
+    try {
+        const gifUrl = await fetchGIF(title);
         return createElement("img", {
             className: "planet-gif",
             attributes: {
@@ -217,7 +216,8 @@ async function createGifElement(title) {
                 alt: `${title} GIF`,
             },
         });
-    } else {
+    } catch (error) {
         return createElement("p", { className: "gif-error", content: "GIF not found" });
     }
 }
+
