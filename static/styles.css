@@ -41,6 +41,14 @@ body {
     color: black;
 }
 
+.controls button:disabled {
+    background: #5e5b5b;
+    color: #ccc;
+    cursor: not-allowed;
+    box-shadow: none;
+    opacity: 0.5;
+}
+
 .planet-list {
     list-style: none;
     margin: 0;
@@ -106,11 +114,51 @@ body {
     margin-right: 0;
 }
 
-.planet-resident-error, .gif-error {
+.planet-resident-none {
     font-weight: 800;
-    color: #af2335;
+    color: #E0FFFF;
     text-align: right;
     margin: 0;
+    width: 100%;
+}
+
+.loader, .planets-load-error {
+    text-align: center;
+    font-size: 25px;
+    font-weight: 600;
+    color: white;
+    grid-column: 1 / -1;
+}
+
+.planets-load-error, .planet-residents-error  {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    color: #bd112a;
+    width: 100%;
+    margin: 10px auto;
+    text-align: center;
+}
+
+.planet-residents-error, .gif-error {
+    font-weight: 800;
+    text-align: right;
+}
+
+.planet-resident-error {
+    color: #bd112a;
+}
+
+.no-more-planets-message {
+    width: 100%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    color: #E0FFFF;
+    font-size: 50px;
+    font-weight: bold;
+    text-align: center;
+    margin-top: 80px;
 }
 
 .planet-gif {
@@ -119,21 +167,6 @@ body {
     object-fit: cover;
     border-radius: 10px;
 }
-
-.loader, .error {
-    text-align: center;
-    font-size: 25px;
-    font-weight: 600;
-    color: white;
-    grid-column: 1 / -1;
-}
-
-.error {
-    display: flex;
-    justify-content: center;
-    align-items: center;
-}
-
 
 @media screen and (max-width: 1300px) {
     .planet-list {

@@ -1,56 +1,46 @@
 // nginx 8081 web
 const API_BASE_URL = "/api";
 const IMAGE_BASE_URL = "/image";
+let currentPageUrl = API_BASE_URL;
 
 
 const loadButton = document.body.querySelector(".load");
-loadButton.addEventListener("click", fetchPlanets);
+loadButton.addEventListener("click", loadAndDisplayPlanets);
 
 
 const clearButton = document.body.querySelector(".clear");
-clearButton.addEventListener("click", clearPlanets);
+clearButton.addEventListener("click", resetPlanetView);
 
 
-function clearPlanets() {
+function resetPlanetView() {
     const parent = document.body.querySelector(".planet-list");
     parent.innerHTML = "";
+    currentPageUrl = API_BASE_URL;
+    loadButton.disabled = false;
+
+    document.querySelectorAll(".no-more-planets-message, .planet-load-error").forEach((el) => el.remove());
 }
 
 
-async function fetchPlanets() {
+async function loadAndDisplayPlanets() {
+    if (!currentPageUrl) {
+        handleNoMorePlanets();
+        return;
+    }
+
     const parent = document.body.querySelector(".planet-list");
-    const loader = createLoader();
+    const loader = createElement("li", { className: "loader", content: "Loading..." });
     parent.appendChild(loader);
 
     try {
-        const response = await fetch(API_BASE_URL);
-
-        if (!response.ok) {
-            throw new Error(`Error fetching planets: ${response.statusText}`);
-        }
-
-        const data = await response.json();
-
-        if (!data.next) {
-            loadButton.disabled = true;
-            loadButton.textContent = "No More Planets";
-        }
-
-        for (const planet of data.results) {
-            const {
-                name, diameter, climate, orbital_period, population, rotation_period, surface_water, terrain, residents
-            } = planet;
-            const gifUrl = await fetchGIF(planet.name);
-            const li = createItem(name, diameter, climate, orbital_period, population, rotation_period, surface_water, terrain, residents, gifUrl);
-
-            parent.appendChild(await li);
-        }
-
+        const data = await fetchData(currentPageUrl, "planets");
+        await processPlanets(data.results, parent);
+        currentPageUrl = data.next;
     } catch (error) {
-        console.error(`Error fetching planets: ${error.message}`);
-        const parent = document.body.querySelector(".planet-list");
-        parent.classList.add("error");
-        parent.innerHTML = "<li>Error! Please try later</li>";
+        createUniqueElement(parent, "li", {
+            className: "planets-load-error",
+            content: "Error! Please try again later.",
+        }, "planets-load-error");
     } finally {
         loader.remove();
     }
@@ -59,101 +49,174 @@ async function fetchPlanets() {
 
 async function fetchResidentName(url) {
     try {
-        const response = await fetch(url);
-
-        if (!response.ok) {
-            throw new Error(`Error fetching resident: ${response.statusText}`);
-        }
-        const data = await response.json();
+        const data = await fetchData(url, "resident");
         return data.name;
     } catch (error) {
-        console.error(`Error fetching resident: ${error.message}`);
-        return "error";
+        throw error;
     }
 }
 
 
 async function fetchGIF(title) {
-    const query = encodeURIComponent(title.replace(/\s+/g, '-'));
+    const query = encodeURIComponent(title.replace(/\s+/g, "-"));
     try {
-        const response = await fetch(`${IMAGE_BASE_URL}/${query}`);
-        if (!response.ok) {
-            throw new Error(`Error fetching GIF: ${response.statusText}`);
-        }
-        const data = await response.json();
-        return data.animated_image || null;
+        const data = await fetchData(`${IMAGE_BASE_URL}/${query}`, "GIF");
+        return data.animated_image;
     } catch (error) {
-        console.error(`Error fetching GIF for ${title}: ${error.message}`)
-        return "error";
+        throw error;
     }
 }
 
 
-function createLoader() {
-    const loader = document.createElement("li");
-    loader.innerText = "Loading...";
-    loader.classList.add("loader");
-    return loader;
+function handleNoMorePlanets() {
+    loadButton.disabled = true;
+
+    createUniqueElement(document.body, "div", {
+        className: "no-more-planets-message",
+        content: "No More Planets to Load!",
+    }, "no-more-planets-message");
 }
 
 
-async function createItem(name, diameter, climate, orbital_period, population, rotation_period, surface_water, terrain, residents, gifUrl) {
-    const li = document.createElement("li");
-    li.classList.add("planet-item");
+async function fetchData(url, context = "data") {
+    try {
+        const response = await fetch(url);
 
-    const h2 = document.createElement("h2");
-    h2.classList.add("planet-item-title");
-    h2.innerText = name;
-    li.appendChild(h2);
-
-    const p = document.createElement("p");
-    p.classList.add("planet-item-info");
-    p.innerText = `Diameter: ${diameter}, Climate: ${climate}, Orbital Period: ${orbital_period}, Population: ${population}, Rotation Period: ${rotation_period}, Surface Water: ${surface_water}, Terrain: ${terrain}.`;
-    li.appendChild(p);
-
-    const h3 = document.createElement("h3");
-    h3.classList.add("planet-resident-title");
-    h3.innerText = "Residents";
-    li.appendChild(h3);
-
-    if (residents) {
-        if (residents.length > 0) {
-            const ul = document.createElement("ul");
-            ul.classList.add("planet-resident-list");
-
-            for (const residentUrl of residents) {
-                const residentName = await fetchResidentName(residentUrl);
-                const li = document.createElement("li");
-                li.innerText = residentName;
-                ul.appendChild(li);
-            }
-            li.appendChild(ul);
-        } else {
-            const p = document.createElement("p");
-            p.classList.add("planet-resident-none");
-            p.innerText = "No known residents";
-            li.appendChild(p);
+        if (!response.ok) {
+            throw new Error(`HTTP Error: ${response.statusText}`);
         }
 
-    } else {
-        const p = document.createElement("p");
-        p.classList.add("planet-resident-error");
-        p.innerText = "Error while fetching residents";
-        li.appendChild(p);
+        return await response.json();
+    } catch (error) {
+        console.error(`Error ${context.toLowerCase()} from ${url}: ${error.message}`);
+        throw error;
+    }
+}
+
+
+async function processPlanets(planets, parent) {
+    for (const planet of planets) {
+        try {
+            const li = await generatePlanetElement(planet);
+            parent.appendChild(li);
+        } catch (error) {
+            console.error(`Error processing planet "${planet.name}": ${error.message}`);
+        }
+    }
+}
+
+
+function createElement(tag, options = {}) {
+    const { className = null, content = null, attributes = {} } = options;
+
+    const element = document.createElement(tag);
+
+    if (className) {
+        element.classList.add(...(Array.isArray(className) ? className : [className]));
     }
 
-    if (gifUrl) {
-        const gifImg = document.createElement("img");
-        gifImg.classList.add("planet-gif");
-        gifImg.src = gifUrl;
-        gifImg.alt = `${name} GIF`;
-        li.appendChild(gifImg);
-    } else {
-        const gifError = document.createElement("p");
-        gifError.classList.add("gif-error");
-        gifError.innerText = "GIF not found";
-        li.appendChild(gifError);
+    if (content) {
+        element.innerText = content;
     }
+
+    for (const [attr, value] of Object.entries(attributes)) {
+        element.setAttribute(attr, value);
+    }
+
+    return element;
+}
+
+
+function createUniqueElement(parent, tag, options = {}, className) {
+    const existingElement = parent.querySelector(`.${className}`);
+    if (!existingElement) {
+        const element = createElement(tag, options);
+        parent.appendChild(element);
+    }
+}
+
+
+async function generatePlanetElement(planet) {
+    const { name, diameter, climate, orbital_period, population, rotation_period, surface_water, terrain, residents } = planet;
+
+    const li = createElement("li", { className: "planet-item" });
+
+    li.appendChild(createPlanetTitle(name));
+    li.appendChild(createPlanetInfo(diameter, climate, orbital_period, population, rotation_period, surface_water, terrain));
+
+    li.appendChild(createElement("h3", {
+        className: "planet-resident-title",
+        content: "Residents",
+    }));
+
+    const residentsList = await generateResidentsList(residents);
+    li.appendChild(residentsList);
+
+    const gifElement = await createGifElement(name);
+    li.appendChild(gifElement);
 
     return li;
+}
+
+
+function createPlanetTitle(name) {
+    return createElement("h2", { className: "planet-item-title", content: name });
+}
+
+
+function createPlanetInfo(diameter, climate, orbital_period, population, rotation_period, surface_water, terrain) {
+    const content = `Diameter: ${diameter}, Climate: ${climate}, Orbital Period: ${orbital_period}, Population: ${population}, Rotation Period: ${rotation_period}, Surface Water: ${surface_water}, Terrain: ${terrain}.`;
+    return createElement("p", { className: "planet-item-info", content });
+}
+
+
+async function generateResidentsList(residents) {
+    const ul = createElement("ul", { className: "planet-resident-list" });
+
+    if (!residents) {
+        createUniqueElement(ul, "li", {
+            className: "planet-residents-error",
+            content: "Error while fetching residents",
+        }, "planet-residents-error");
+        return ul;
+    }
+
+    if (residents.length === 0) {
+        ul.appendChild(createElement("li", {
+            className: "planet-resident-none",
+            content: "No known residents",
+        }));
+        return ul;
+    }
+
+    for (const residentUrl of residents) {
+        try {
+            const residentName = await fetchResidentName(residentUrl);
+            ul.appendChild(createElement("li", { content: residentName }));
+        } catch (error) {
+            ul.appendChild(createElement("li", {
+                className: "planet-resident-error",
+                content: "Error fetching resident",
+            }));
+        }
+    }
+
+    return ul;
+}
+
+
+async function createGifElement(title) {
+    const gifUrl = await fetchGIF(title);
+
+    if (gifUrl) {
+        return createElement("img", {
+            className: "planet-gif",
+            attributes: {
+                src: gifUrl,
+                alt: `${title} GIF`,
+            },
+        });
+    } else {
+        return createElement("p", { className: "gif-error", content: "GIF not found" });
+    }
 }
