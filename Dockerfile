@@ -15,7 +15,8 @@ COPY static /home/html
 # setting up nodejs application
 COPY package.json /home/package.json
 COPY src/main.js /home/main.js
-COPY node_modules /home/node_modules
+WORKDIR /home
+RUN npm install
 
 # adding supervisor configuration
 COPY supervisord.conf /etc/supervisor/conf.d/supervisord.conf
