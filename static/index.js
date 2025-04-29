@@ -1,6 +1,5 @@
 // nginx 8081 web
 const API_BASE_URL = "/api";
-const IMAGE_BASE_URL = "/image";
 let currentPageUrl = API_BASE_URL;
 
 
@@ -57,17 +56,6 @@ async function fetchResidentName(url) {
 }
 
 
-async function fetchGIF(title) {
-    const query = encodeURIComponent(title.replace(/\s+/g, "-"));
-    try {
-        const data = await fetchData(`${IMAGE_BASE_URL}/${query}`, "GIF");
-        return data.animated_image;
-    } catch (error) {
-        throw error;
-    }
-}
-
-
 function handleNoMorePlanets() {
     loadButton.disabled = true;
 
@@ -88,7 +76,7 @@ async function fetchData(url, context = "data") {
 
         return await response.json();
     } catch (error) {
-        console.error(`Error ${context.toLowerCase()} from ${url}: ${error.message}`);
+        console.error(`Error fetching ${context.toLowerCase()} from ${url}: ${error.message}`);
         throw error;
     }
 }
@@ -138,7 +126,7 @@ function createUniqueElement(parent, tag, options = {}, className) {
 
 
 async function generatePlanetElement(planet) {
-    const { name, diameter, climate, orbital_period, population, rotation_period, surface_water, terrain, residents } = planet;
+    const { name, diameter, climate, orbital_period, population, rotation_period, surface_water, terrain, residents, animated_image } = planet;
 
     const li = createElement("li", { className: "planet-item" });
 
@@ -153,7 +141,7 @@ async function generatePlanetElement(planet) {
     const residentsList = await generateResidentsList(residents);
     li.appendChild(residentsList);
 
-    const gifElement = await createGifElement(name);
+    const gifElement = createGifElement(animated_image, name);
     li.appendChild(gifElement);
 
     return li;
@@ -206,18 +194,12 @@ async function generateResidentsList(residents) {
 }
 
 
-async function createGifElement(title) {
-    try {
-        const gifUrl = await fetchGIF(title);
-        return createElement("img", {
-            className: "planet-gif",
-            attributes: {
-                src: gifUrl,
-                alt: `${title} GIF`,
-            },
-        });
-    } catch (error) {
-        return createElement("p", { className: "gif-error", content: "GIF not found" });
-    }
+function createGifElement(animated_image, name) {
+    return createElement('img', {
+        className: "planet-gif",
+        attributes: {
+            src: animated_image,
+            alt: `${name} GIF`
+        }
+    });
 }
-

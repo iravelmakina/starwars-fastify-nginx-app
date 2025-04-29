@@ -1,6 +1,8 @@
 // nodejs 3000 application
 import Fastify from "fastify";
 import dotenv from "dotenv";
+import https from "https";
+import fetch from 'node-fetch';
 
 
 dotenv.config();
@@ -8,21 +10,31 @@ dotenv.config();
 const STARWARS_API_URL = "https://swapi.dev/api/planets/";
 const GIPHY_API_URL = "https://api.giphy.com/v1/gifs/search";
 
+const httpsAgent = new https.Agent({
+    rejectUnauthorized: false,
+});
 
 const fastify = Fastify({logger: true});
 
 
 fastify.get("/api", async (req, reply) => {
     try {
-        const response = await fetch(STARWARS_API_URL);
+        console.log("Fetching data from StarWars API...");
+        const response = await fetch(STARWARS_API_URL, { agent: httpsAgent });
         if (!response.ok) {
             fastify.log.error(`Error from StarWars API: ${response.statusText}`);
             reply.code(response.status).send({ message: `Error fetching data: ${response.statusText}` });
             return;
         }
         const data = await response.json();
+
+        const planetsWithImages = data.results.map(planet => ({
+            ...planet,
+            animated_image: `/image/${encodeURIComponent(planet.name)}`
+        }));
+
         reply.type("application/json");
-        return reply.send(data);
+        return reply.send({ results: planetsWithImages, next: data.next });
     } catch (error) {
         fastify.log.error(`Unexpected error: ${error.message}`);
         reply.code(500).send({ message: "Internal server error while fetching StarWars data" });
@@ -50,14 +62,20 @@ fastify.get("/image/:title", async (req, reply) => {
         }
 
         const data = await response.json();
-
         if (!data.data || data.data.length === 0) {
             reply.code(404).send({ error: "No GIF found for the given title" });
             return;
         }
 
         const gifUrl = data.data[0].images.original.url;
-        reply.type("application/json").send({ animated_image: gifUrl });
+        const gifResponse = await fetch(gifUrl);
+        if (!gifResponse.ok) {
+            reply.code(500).send({ error: "Failed to fetch GIF binary" });
+            return;
+        }
+
+        const buffer = await gifResponse.arrayBuffer();
+        reply.type("image/gif").send(Buffer.from(buffer));
 
     } catch (error) {
         fastify.log.error(`Unexpected error: ${error.message}`);
