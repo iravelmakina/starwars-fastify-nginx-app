@@ -195,11 +195,20 @@ async function generateResidentsList(residents) {
 
 
 function createGifElement(animated_image, name) {
-    return createElement('img', {
+    const img = createElement('img', {
         className: "planet-gif",
         attributes: {
             src: animated_image,
-            alt: `${name} GIF`
+            alt: `${name} GIF`,
         }
     });
+
+    img.onerror = function() {
+        this.replaceWith(createElement("p", {
+            className: "gif-error",
+            content: "GIF not found",
+        }));
+    };
+
+    return img;
 }

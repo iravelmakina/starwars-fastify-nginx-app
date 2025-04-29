@@ -19,7 +19,6 @@ const fastify = Fastify({logger: true});
 
 fastify.get("/api", async (req, reply) => {
     try {
-        console.log("Fetching data from StarWars API...");
         const response = await fetch(STARWARS_API_URL, { agent: httpsAgent });
         if (!response.ok) {
             fastify.log.error(`Error from StarWars API: ${response.statusText}`);
