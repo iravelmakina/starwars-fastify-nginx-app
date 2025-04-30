@@ -28,7 +28,7 @@ Built using **Fastify**, **Vanilla JS**, and served via **NGINX** — all wrappe
 ```
 
 ## Screenshots
-<img width="700" alt="StarWars Planets App" src="./static/images/planet.png" />
+<img width="1512" alt="Screenshot 2025-04-30 at 15 19 37" src="https://github.com/user-attachments/assets/85b19b13-5f21-4051-8145-7ec8eb5f86d5" />
 
 ## Tech Stack
 - **Fastify** (Node.js web framework)
